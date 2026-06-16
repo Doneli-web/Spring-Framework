@@ -1,19 +1,15 @@
 package servlet;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
-@WebServlet("/*")
 public class FrontControllerServlet extends HttpServlet {
 
-    @Override
-    protected void doGet(HttpServletRequest request,
-                         HttpServletResponse response)
-            throws ServletException, IOException {
+    public void processRequest(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
 
         String url = request.getRequestURI();
 
@@ -24,11 +20,12 @@ public class FrontControllerServlet extends HttpServlet {
         out.println("<p>" + url + "</p>");
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request,
-                          HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+        processRequest(request, response);
+    }
 
-        doGet(request, response);
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        processRequest(request, response);
     }
 }
