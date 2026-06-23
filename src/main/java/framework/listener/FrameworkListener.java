@@ -22,8 +22,8 @@ public class FrameworkListener implements ServletContextListener {
 
         try {
 
-            List<String> controllers =
-                    Utilitaire.getClassNamesWithAnnotation(
+            List<Class<?>> controllers =
+                    Utilitaire.getClassWithAnnotation(
                             packageName,
                             Controller.class);
 

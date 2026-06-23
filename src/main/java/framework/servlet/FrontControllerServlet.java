@@ -1,13 +1,17 @@
 package framework.servlet;
 
+import framework.exception.UrlNotFoundException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.util.List;
 
 import framework.reflection.Utilitaire;
+
+import static framework.reflection.Utilitaire.getMethodByUrl;
 
 public class FrontControllerServlet extends HttpServlet {
 
@@ -24,36 +28,55 @@ public class FrontControllerServlet extends HttpServlet {
 
     public void processRequest(HttpServletRequest request,
                                HttpServletResponse response)
-            throws ServletException, IOException {
+            throws Exception {
 
         response.setContentType("text/html;charset=UTF-8");
 
         @SuppressWarnings("unchecked")
-        List<String> controllerNames =
-                (List<String>) getServletContext().getAttribute("controllers");
+        List<Class<?>> controllers =
+                (List<Class<?>>) getServletContext().getAttribute("controllers");
 
-        if (controllerNames == null) {
+        if (controllers == null) {
             throw new ServletException("Aucun contrôleur n'a été chargé.");
         }
+
+        String contextPath = request.getContextPath();
+        String url = request.getRequestURI().substring(contextPath.length());
+
+        Method method = getMethodByUrl(url, controllers);
 
         try (PrintWriter out = response.getWriter()) {
 
             out.println("<p>" + request.getRequestURI() + "</p>");
 
-            out.println("<p>Liste des controllers :</p>");
-
-            for (String controllerName : controllerNames) {
-                out.println("<p>" + controllerName + "</p>");
-            }
+//            out.println("<p>Liste des controllers :</p>");
+//
+//            for (Class<?> controller : controllers) {
+//                out.println("<p>" + controller.getSimpleName() + "</p>");
+//            }
+            out.println("<p>Methode associe :</p>");
+            out.println("<p>" + method.getName() + "</p>");
         }
     }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException {
-        processRequest(request, response);
+        try {
+            processRequest(request, response);
+        } catch (UrlNotFoundException e) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        processRequest(request, response);
+        try {
+            processRequest(request, response);
+        } catch (UrlNotFoundException e) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 }
