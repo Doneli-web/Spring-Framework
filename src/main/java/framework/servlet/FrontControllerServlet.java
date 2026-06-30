@@ -45,6 +45,11 @@ public class FrontControllerServlet extends HttpServlet {
         // Résolution AVANT d'ouvrir le writer
         RouteMapping route = Utilitaire.getByUrlAndMethode(urlMethod, urlsMethodes);
 
+        String contextPath = request.getContextPath();
+        String url = request.getRequestURI().substring(contextPath.length());
+
+        Method method = getMethodByUrl(url, controllers);
+
         try (PrintWriter out = response.getWriter()) {
             out.println("<h1> Url : " + request.getRequestURI() + "</h1>");
             out.println("<h3>Méthode associée : <span style='font-weight:normal;'>"
