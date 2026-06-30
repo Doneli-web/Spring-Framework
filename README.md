@@ -62,7 +62,7 @@
 
 ### Compilation :
 ```
-    javac -cp "lib/servlet-api.jar" -d bin src/main/java/framework/servlet/*.java src/main/java/framework/annotation/*.java src/main/java/framework/reflection/*.java
+    javac -cp "lib/servlet-api.jar" -d bin src/main/java/framework/servlet/*.java src/main/java/framework/annotation/*.java src/main/java/framework/reflection/*.java src/main/java/framework/exception/*.java src/main/java/framework/listener/*.java src/main/java/framework/route/*.java
     jar cf framework.jar -C bin .
 
 
