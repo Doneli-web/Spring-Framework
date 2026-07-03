@@ -20,14 +20,16 @@ public class FrontControllerServlet extends HttpServlet {
 
     String packageName;
     private List<String> controllerNames;
-//    public void init() throws ServletException {
-//        try {
+    private Map<UrlMethod, RouteMapping> urlsMethodes;
+    public void init() throws ServletException {
+        try {
 //            packageName = this.getInitParameter("packageName");
 //            this.controllerNames = Utilitaire.getClassNamesWithAnnotation("controller", framework.annotation.Controller.class);
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+            this.urlsMethodes = (Map<UrlMethod, RouteMapping>) getServletContext().getAttribute("urlsMethodes");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws UrlNotFoundException, ServletException {
@@ -37,10 +39,6 @@ public class FrontControllerServlet extends HttpServlet {
         String contextPath = request.getContextPath();
         String url = request.getRequestURI().substring(contextPath.length());
         UrlMethod urlMethod = new UrlMethod(url, request.getMethod());
-
-        @SuppressWarnings("unchecked")
-        Map<UrlMethod, RouteMapping> urlsMethodes =
-                (Map<UrlMethod, RouteMapping>) getServletContext().getAttribute("urlsMethodes");
 
         // Résolution AVANT d'ouvrir le writer
         RouteMapping route = Utilitaire.getByUrlAndMethode(urlMethod, urlsMethodes);
@@ -53,7 +51,9 @@ public class FrontControllerServlet extends HttpServlet {
                     + urlMethod.getMethode() + "</span></h4>");
             out.println("<h3>Class associe : <span style='font-weight:normal;'>"
                     + route.getClazz().getSimpleName() + "</span></h3>");
-        } catch (IOException e) {
+            out.println("<h3>Execution de la methode : <span style='font-weight:normal;'>"
+                    + route.getMethod().invoke(route) + "</span></h3>");
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
