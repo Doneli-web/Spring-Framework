@@ -45,19 +45,6 @@ public class Utilitaire {
 
         return classes;
     }
-//    public static List<String> getClassNamesWithAnnotation(String packageName, Class<? extends Annotation> annotationClass) throws Exception {
-//
-//        List<Class<?>> classes = getClasses(packageName);
-//        List<String> result = new ArrayList<>();
-//
-//        for (Class<?> clazz : classes) {
-//            if (clazz.isAnnotationPresent(annotationClass)) {
-//                result.add(clazz.getSimpleName());
-//            }
-//        }
-//
-//        return result;
-//    }
     public static List<Class<?>> getClassWithAnnotation(String packageName, Class<? extends Annotation> annotationClass) throws Exception {
 
         List<Class<?>> classes = getClasses(packageName);
@@ -117,57 +104,6 @@ public class Utilitaire {
                         supportedUrls
         );
     }
-//    public static Map<String, RouteMapping> urlDetection(List<Class<?>> classes){
-//        Map<String, RouteMapping> result = new HashMap<>();
-//        for (Class<?> clazz : classes) {
-//            for (Method method : clazz.getDeclaredMethods()) {
-//                if (method.isAnnotationPresent(UrlMapping.class)) {
-//                    UrlMapping annotation = method.getAnnotation(UrlMapping.class);
-//                    result.put(annotation.value(), new RouteMapping(clazz, method));
-//                }
-//            }
-//        }
-//
-//        return result;
-//    }
-//    public static RouteMapping getByUrl(String url, Map<String, RouteMapping> map) throws UrlNotFoundException{
-//        RouteMapping route = map.get(url);
-//        StringBuilder message = new StringBuilder("Aucun methode associer a l'url : " + url + "\n");
-//        message.append("Listes des urls supporter : \n");
-//        for(Map.Entry<String, RouteMapping> entry: map.entrySet()){
-//            message.append("Url : ").append(entry.getKey()).append(" ---> Methode : ").append(entry.getValue().getMethod().getName()).append(" ---> Class : ").append(entry.getValue().getClazz().getSimpleName()).append("\n");
-//        }
-//        if(route != null){
-//            return route;
-//        }
-//        throw new UrlNotFoundException(
-//                message.toString()
-//        );
-//    }
-//    public static Map<UrlMethod, RouteMapping> getAllUrlMethode(List<Class<?>> classes) throws Exception {
-//        Map<UrlMethod, RouteMapping> result = new HashMap<>();
-//        for (Class<?> clazz : classes) {
-//            for (Method method : clazz.getDeclaredMethods()) {
-//                if (method.isAnnotationPresent(UrlMapping.class)) {
-//                    UrlMapping annotation = method.getAnnotation(UrlMapping.class);
-//                    UrlMethod urlMethod = new UrlMethod(annotation.value(), annotation.methode());
-//                    if(result.containsKey(urlMethod)){
-//                        RouteMapping route = result.get(urlMethod);
-//                        throw new Exception(
-//                                "Erreur : l'url : " + urlMethod.getUrl() + "' et la methode : '"
-//                                        + urlMethod.getMethode() + "' existe deja dans la class : '"
-//                                        + route.getClazz().getSimpleName() + "'et la methode : "
-//                                        + route.getMethod().getName() + "'"
-//                        );
-//                    }
-//                    result.put(urlMethod, new RouteMapping(clazz, method));
-//                }
-//            }
-//        }
-//
-//        return result;
-//    }
-
     public static void scaningMethodesClass(Map<UrlMethod, RouteMapping> map, Class<?> clazz) throws Exception {
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(UrlMapping.class)) {
