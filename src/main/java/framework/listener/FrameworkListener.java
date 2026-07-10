@@ -23,19 +23,15 @@ public class FrameworkListener implements ServletContextListener {
         ServletContext context = servletContextEvent.getServletContext();
 
         String packageName = context.getInitParameter("packageName");
+        String prefixe = context.getInitParameter("prefixe");
+        String suffixe = context.getInitParameter("suffixe");
 
         try {
-//            List<Class<?>> controllers =
-//                    Utilitaire.getClassWithAnnotation(
-//                            packageName,
-//                            Controller.class);
-//
-//            Map<String, RouteMapping> urls = Utilitaire.urlDetection(controllers);
             Map<UrlMethod, RouteMapping> urlsMethodes = new HashMap<>();
             Utilitaire.getAllUrlMethode(urlsMethodes, packageName, Controller.class);
-//            context.setAttribute("controllers", controllers);
-//            context.setAttribute("urls", urls);
             context.setAttribute("urlsMethodes", urlsMethodes);
+            context.setAttribute("prefixe", prefixe);
+            context.setAttribute("suffixe", suffixe);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
