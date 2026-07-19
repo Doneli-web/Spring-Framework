@@ -27,6 +27,7 @@ public class FrontControllerServlet extends HttpServlet {
 
     public void init() throws ServletException {
         try {
+            
             this.urlsMethodes = (Map<UrlMethod, RouteMapping>) getServletContext().getAttribute("urlsMethodes");
             this.prefixe = (String) getServletContext().getAttribute("prefixe");
             this.suffixe = (String) getServletContext().getAttribute("suffixe");
