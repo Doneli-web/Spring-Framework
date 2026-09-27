@@ -1,5 +1,6 @@
 package framework.reflection;
 
+import framework.annotation.APIRest;
 import framework.annotation.UrlMapping;
 import framework.exception.UrlNotFoundException;
 import framework.route.RouteMapping;
@@ -104,6 +105,7 @@ public class Utilitaire {
                         supportedUrls
         );
     }
+    public static boolean isApiRest(Method method) { return method.isAnnotationPresent( APIRest.class ); }
     public static void scaningMethodesClass(Map<UrlMethod, RouteMapping> map, Class<?> clazz) throws Exception {
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(UrlMapping.class)) {
