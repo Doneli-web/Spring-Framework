@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,14 +55,40 @@ public class FrontControllerServlet extends HttpServlet {
         RouteMapping route = Utilitaire.getByUrlAndMethode(urlMethod, urlsMethodes);
         Object controller = route.getClazz().getDeclaredConstructor().newInstance();
 
+        Map<String, String[]> requestParams = request.getParameterMap();
+
         if (springContext != null) {
             springContext.getAutowireCapableBeanFactory().autowireBean(controller);
         }
 
-        Object result;
+        Object result = null;
         try {
             route.getMethod().setAccessible(true);
-            result = route.getMethod().invoke(controller);
+            if(route.getMethod().getParameterCount() != 0){
+                Parameter[] parameters = route.getMethod().getParameters();
+                Object[] arguments = new Object[parameters.length];
+                for (int i = 0; i < parameters.length; i++) {
+                    String parameterName = parameters[i].getName();
+                    String parameterValue = request.getParameter(parameterName);
+
+                    arguments[i] = Utilitaire.convert(
+                            parameterValue,
+                            parameters[i].getType()
+                    );
+                }
+
+                if(route.getMethod().getReturnType() == void.class){
+                    route.getMethod().invoke(controller, arguments);
+
+                    return;
+                } else {
+                    result = route.getMethod().invoke(controller, arguments);
+                }
+
+            } else {
+                result = route.getMethod().invoke(controller);
+            }
+
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
