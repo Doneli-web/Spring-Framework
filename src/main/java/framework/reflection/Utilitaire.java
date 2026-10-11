@@ -9,14 +9,19 @@ import framework.route.UrlMethod;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class Utilitaire {
+
     public static List<Class<?>> getClasses(String packageName) throws Exception {
         List<Class<?>> classes = new ArrayList<>();
 
@@ -46,8 +51,8 @@ public class Utilitaire {
 
         return classes;
     }
-    public static List<Class<?>> getClassWithAnnotation(String packageName, Class<? extends Annotation> annotationClass) throws Exception {
 
+    public static List<Class<?>> getClassWithAnnotation(String packageName, Class<? extends Annotation> annotationClass) throws Exception {
         List<Class<?>> classes = getClasses(packageName);
         List<Class<?>> result = new ArrayList<>();
 
@@ -59,27 +64,21 @@ public class Utilitaire {
 
         return result;
     }
-    public static Map<String, Method> getUrlMethods(Class<?> classe) {
 
+    public static Map<String, Method> getUrlMethods(Class<?> classe) {
         Map<String, Method> routes = new HashMap<>();
 
-        Method[] methods = classe.getDeclaredMethods();
-
-        for (Method method : methods) {
-
+        for (Method method : classe.getDeclaredMethods()) {
             if (method.isAnnotationPresent(UrlMapping.class)) {
-
                 UrlMapping urlMapping = method.getAnnotation(UrlMapping.class);
-
                 routes.put(urlMapping.value(), method);
             }
         }
 
         return routes;
     }
-    public static Method getMethodByUrl(String url, List<Class<?>> classes)
-            throws Exception {
 
+    public static Method getMethodByUrl(String url, List<Class<?>> classes) throws Exception {
         StringBuilder supportedUrls = new StringBuilder();
 
         for (Class<?> clazz : classes) {
@@ -105,13 +104,17 @@ public class Utilitaire {
                         supportedUrls
         );
     }
-    public static boolean isApiRest(Method method) { return method.isAnnotationPresent( APIRest.class ); }
+
+    public static boolean isApiRest(Method method) {
+        return method.isAnnotationPresent(APIRest.class);
+    }
+
     public static void scaningMethodesClass(Map<UrlMethod, RouteMapping> map, Class<?> clazz) throws Exception {
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(UrlMapping.class)) {
                 UrlMapping annotation = method.getAnnotation(UrlMapping.class);
                 UrlMethod urlMethod = new UrlMethod(annotation.value(), annotation.methode());
-                if(map.containsKey(urlMethod)){
+                if (map.containsKey(urlMethod)) {
                     RouteMapping route = map.get(urlMethod);
                     throw new Exception(
                             "Erreur : l'url : " + urlMethod.getUrl() + "' et la methode : '"
@@ -124,6 +127,7 @@ public class Utilitaire {
             }
         }
     }
+
     public static void getAllUrlMethode(Map<UrlMethod, RouteMapping> map, String packageName, Class<? extends Annotation> annotationClass) throws Exception {
         List<Class<?>> classes = getClasses(packageName);
 
@@ -148,5 +152,65 @@ public class Utilitaire {
         }
 
         return route;
+    }
+    
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static Object convert(String value, Class<?> type) {
+        boolean vide = (value == null || value.trim().isEmpty());
+
+        if (type == String.class) {
+            return value;
+        }
+
+        if (vide) {
+            return defaultValue(type);
+        }
+
+        value = value.trim();
+
+        try {
+            if (type == int.class || type == Integer.class) return Integer.parseInt(value);
+            if (type == long.class || type == Long.class) return Long.parseLong(value);
+            if (type == double.class || type == Double.class) return Double.parseDouble(value);
+            if (type == float.class || type == Float.class) return Float.parseFloat(value);
+            if (type == short.class || type == Short.class) return Short.parseShort(value);
+            if (type == byte.class || type == Byte.class) return Byte.parseByte(value);
+            if (type == boolean.class || type == Boolean.class) {
+                return value.equalsIgnoreCase("true") || value.equalsIgnoreCase("on")
+                        || value.equals("1") || value.equalsIgnoreCase("yes");
+            }
+            if (type == char.class || type == Character.class) {
+                if (value.length() != 1) {
+                    throw new IllegalArgumentException("un seul caractère attendu");
+                }
+                return value.charAt(0);
+            }
+            if (type == BigDecimal.class) return new BigDecimal(value);
+            if (type == BigInteger.class) return new BigInteger(value);
+            if (type == LocalDate.class) return LocalDate.parse(value);
+            if (type == LocalDateTime.class) return LocalDateTime.parse(value);
+            if (type == LocalTime.class) return LocalTime.parse(value);
+            if (type.isEnum()) return Enum.valueOf((Class<Enum>) type, value);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "impossible de convertir '" + value + "' en " + type.getSimpleName(), e);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException(
+                    "impossible de convertir '" + value + "' en " + type.getSimpleName(), e);
+        }
+
+        throw new IllegalArgumentException("type non supporté : " + type.getName());
+    }
+
+    private static Object defaultValue(Class<?> type) {
+        if (type == int.class) return 0;
+        if (type == long.class) return 0L;
+        if (type == double.class) return 0.0;
+        if (type == float.class) return 0f;
+        if (type == short.class) return (short) 0;
+        if (type == byte.class) return (byte) 0;
+        if (type == boolean.class) return false;
+        if (type == char.class) return '\0';
+        return null;
     }
 }

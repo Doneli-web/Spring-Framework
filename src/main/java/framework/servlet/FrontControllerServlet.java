@@ -13,10 +13,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import framework.reflection.ObjectBinder;
 import framework.reflection.Utilitaire;
 
 public class FrontControllerServlet extends HttpServlet {
@@ -54,14 +57,20 @@ public class FrontControllerServlet extends HttpServlet {
         RouteMapping route = Utilitaire.getByUrlAndMethode(urlMethod, urlsMethodes);
         Object controller = route.getClazz().getDeclaredConstructor().newInstance();
 
+        Map<String, String[]> requestParams = request.getParameterMap();
+
         if (springContext != null) {
             springContext.getAutowireCapableBeanFactory().autowireBean(controller);
         }
 
-        Object result;
+        Object result = null;
         try {
-            route.getMethod().setAccessible(true);
-            result = route.getMethod().invoke(controller);
+            Method method = route.getMethod();
+            method.setAccessible(true);
+
+            Object[] arguments = resolveArguments(method, request, response);
+            result = method.invoke(controller, arguments);
+
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
@@ -69,7 +78,9 @@ public class FrontControllerServlet extends HttpServlet {
             }
             throw e;
         }
-
+        if (route.getMethod().getReturnType() == void.class) {
+            return;
+        }
         if (Utilitaire.isApiRest(route.getMethod())) {
 
             response.setContentType("application/json;charset=UTF-8");
@@ -99,6 +110,23 @@ public class FrontControllerServlet extends HttpServlet {
             out.println(String.valueOf(result));
         }
 
+    }
+
+    private Object[] resolveArguments(Method method, HttpServletRequest request, HttpServletResponse response)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+        Parameter[] parameters = method.getParameters();
+        Object[] arguments = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            arguments[i] = ObjectBinder.resolve(
+                    parameters[i].getParameterizedType(),
+                    parameters[i].getName(),
+                    request,
+                    true
+            );
+        }
+
+        return arguments;
     }
 
     @Override
