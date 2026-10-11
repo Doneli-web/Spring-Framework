@@ -13,11 +13,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import framework.reflection.ObjectBinder;
 import framework.reflection.Utilitaire;
 
 public class FrontControllerServlet extends HttpServlet {
@@ -63,31 +65,11 @@ public class FrontControllerServlet extends HttpServlet {
 
         Object result = null;
         try {
-            route.getMethod().setAccessible(true);
-            if(route.getMethod().getParameterCount() != 0){
-                Parameter[] parameters = route.getMethod().getParameters();
-                Object[] arguments = new Object[parameters.length];
-                for (int i = 0; i < parameters.length; i++) {
-                    String parameterName = parameters[i].getName();
-                    String parameterValue = request.getParameter(parameterName);
+            Method method = route.getMethod();
+            method.setAccessible(true);
 
-                    arguments[i] = Utilitaire.convert(
-                            parameterValue,
-                            parameters[i].getType()
-                    );
-                }
-
-                if(route.getMethod().getReturnType() == void.class){
-                    route.getMethod().invoke(controller, arguments);
-
-                    return;
-                } else {
-                    result = route.getMethod().invoke(controller, arguments);
-                }
-
-            } else {
-                result = route.getMethod().invoke(controller);
-            }
+            Object[] arguments = resolveArguments(method, request, response);
+            result = method.invoke(controller, arguments);
 
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
@@ -96,7 +78,9 @@ public class FrontControllerServlet extends HttpServlet {
             }
             throw e;
         }
-
+        if (route.getMethod().getReturnType() == void.class) {
+            return;
+        }
         if (Utilitaire.isApiRest(route.getMethod())) {
 
             response.setContentType("application/json;charset=UTF-8");
@@ -126,6 +110,23 @@ public class FrontControllerServlet extends HttpServlet {
             out.println(String.valueOf(result));
         }
 
+    }
+
+    private Object[] resolveArguments(Method method, HttpServletRequest request, HttpServletResponse response)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+        Parameter[] parameters = method.getParameters();
+        Object[] arguments = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            arguments[i] = ObjectBinder.resolve(
+                    parameters[i].getParameterizedType(),
+                    parameters[i].getName(),
+                    request,
+                    true
+            );
+        }
+
+        return arguments;
     }
 
     @Override
