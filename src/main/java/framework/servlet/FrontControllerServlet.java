@@ -1,5 +1,6 @@
 package framework.servlet;
 
+import jakarta.servlet.annotation.MultipartConfig;
 import framework.exception.UrlNotFoundException;
 import framework.route.RouteMapping;
 import framework.route.UrlMethod;
@@ -17,14 +18,13 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import framework.reflection.ObjectBinder;
 import framework.reflection.Utilitaire;
 
+@MultipartConfig
 public class FrontControllerServlet extends HttpServlet {
 
-    String packageName;
     String prefixe;
     String suffixe;
     private List<String> controllerNames;
@@ -35,11 +35,9 @@ public class FrontControllerServlet extends HttpServlet {
 
     public void init() throws ServletException {
         try {
-            
             this.urlsMethodes = (Map<UrlMethod, RouteMapping>) getServletContext().getAttribute("urlsMethodes");
             this.prefixe = (String) getServletContext().getAttribute("prefixe");
             this.suffixe = (String) getServletContext().getAttribute("suffixe");
-
             this.springContext = (ApplicationContext) getServletContext().getAttribute("springContext");
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -68,7 +66,7 @@ public class FrontControllerServlet extends HttpServlet {
             Method method = route.getMethod();
             method.setAccessible(true);
 
-            Object[] arguments = resolveArguments(method, request, response);
+            Object[] arguments = resolveArguments(method, request);
             result = method.invoke(controller, arguments);
 
         } catch (InvocationTargetException e) {
@@ -112,8 +110,8 @@ public class FrontControllerServlet extends HttpServlet {
 
     }
 
-    private Object[] resolveArguments(Method method, HttpServletRequest request, HttpServletResponse response)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+    private Object[] resolveArguments(Method method, HttpServletRequest request)
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, ServletException, IOException {
         Parameter[] parameters = method.getParameters();
         Object[] arguments = new Object[parameters.length];
 
