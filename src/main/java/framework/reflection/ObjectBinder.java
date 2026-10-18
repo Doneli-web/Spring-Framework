@@ -1,7 +1,12 @@
 package framework.reflection;
 
+import framework.servlet.MapFile;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -43,7 +48,7 @@ public class ObjectBinder {
     }
 
     public static Object resolve(Type type, String name, HttpServletRequest request, boolean always)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, ServletException, IOException {
 
         Class<?> raw = rawClass(type);
 
@@ -53,6 +58,9 @@ public class ObjectBinder {
                 return always ? Utilitaire.convert(null, raw) : null;
             }
             return Utilitaire.convert(value, raw);
+        }
+        if( raw == MapFile.class) {
+            return resolveFile(name, request, always);
         }
         if (raw.isArray()) {
             return resolveArray(type, raw, name, request, always);
@@ -67,7 +75,7 @@ public class ObjectBinder {
     }
 
     private static Object resolveArray(Type type, Class<?> raw, String name, HttpServletRequest request, boolean always)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, ServletException, IOException {
 
         Type componentType = (type instanceof GenericArrayType)
                 ? ((GenericArrayType) type).getGenericComponentType()
@@ -88,7 +96,7 @@ public class ObjectBinder {
 
     @SuppressWarnings("unchecked")
     private static Object resolveCollection(Type type, Class<?> raw, String name, HttpServletRequest request, boolean always)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, ServletException, IOException {
 
         List<Object> items = resolveItems(typeArgument(type, 0), name, request);
         if (items == null && !always) {
@@ -112,7 +120,7 @@ public class ObjectBinder {
     }
 
     private static List<Object> resolveItems(Type elementType, String name, HttpServletRequest request)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, ServletException, IOException {
 
         Class<?> elementClass = rawClass(elementType);
         List<Object> items = new ArrayList<>();
@@ -139,14 +147,14 @@ public class ObjectBinder {
         }
 
         for (int index : indexes) {
-            items.add(resolve(elementType, name + "[" + index + "]", request, true));
+            items.add(resolve(elementType, name + "[" + index + "]", request,true));
         }
         return items;
     }
 
     @SuppressWarnings("unchecked")
     private static Object resolveMap(Type type, Class<?> raw, String name, HttpServletRequest request, boolean always)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, ServletException, IOException {
 
         Set<String> keys = keysUnder(request, name);
         if (keys.isEmpty() && !always) {
@@ -171,7 +179,7 @@ public class ObjectBinder {
     }
 
     private static Object resolveObject(Class<?> raw, String name, HttpServletRequest request, boolean always)
-            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException {
+            throws InvocationTargetException, IllegalAccessException, NoSuchMethodException, InstantiationException, ServletException, IOException {
 
         if (!always && !hasParameterStartingWith(request, name + ".")) {
             return null;
@@ -197,6 +205,46 @@ public class ObjectBinder {
             }
         }
         return instance;
+    }
+
+
+    private static MapFile resolveFile(String name, HttpServletRequest request, boolean always
+    ) throws ServletException, IOException {
+        Part filePart = request.getPart(name);
+        if (filePart == null
+                || filePart.getSubmittedFileName() == null
+                || filePart.getSubmittedFileName().isBlank()) {
+            if (always) {
+                throw new ServletException(
+                        "Aucun fichier n'a été envoyé pour le paramètre : " + name
+                );
+            }
+
+            return null;
+        }
+
+        return getMultipartFile(filePart);
+    }
+
+
+    private static MapFile getMultipartFile(Part filePart) throws IOException {
+        MapFile mapFile = new MapFile();
+
+        String originalFilename = filePart.getSubmittedFileName();
+
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        }
+
+        InputStream fileStream = filePart.getInputStream();
+        byte[] fileBytes = fileStream.readAllBytes();
+
+        mapFile.setFileName(originalFilename);
+        mapFile.setExtension(extension);
+        mapFile.setBytes(fileBytes);
+        
+        return mapFile;
     }
 
     private static Class<?> rawClass(Type type) {
