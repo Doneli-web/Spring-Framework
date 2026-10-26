@@ -1,8 +1,10 @@
 package framework.reflection;
 
 import framework.servlet.MapFile;
+import framework.session.MySession;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 
 import java.io.IOException;
@@ -17,20 +19,7 @@ import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 
 public class ObjectBinder {
@@ -61,6 +50,9 @@ public class ObjectBinder {
         }
         if( raw == MapFile.class) {
             return resolveFile(name, request, always);
+        }
+        if( raw == MySession.class) {
+            return resolveSession(request);
         }
         if (raw.isArray()) {
             return resolveArray(type, raw, name, request, always);
@@ -205,6 +197,26 @@ public class ObjectBinder {
             }
         }
         return instance;
+    }
+
+    private static MySession resolveSession(HttpServletRequest request) {
+        MySession mySession = new MySession();
+        Map<String, Object> attributesMap = new HashMap<>();
+
+        HttpSession session = request.getSession(true);
+
+        Enumeration<String> attributeNames = session.getAttributeNames();
+        while (attributeNames.hasMoreElements()) {
+            String name = attributeNames.nextElement();
+            attributesMap.put(name, session.getAttribute(name));
+        }
+
+        String sessionId = session.getId();
+
+        attributesMap.put("CLIENT_SESSION_ID", sessionId);
+
+        mySession.setAttributes(attributesMap);
+        return mySession;
     }
 
 

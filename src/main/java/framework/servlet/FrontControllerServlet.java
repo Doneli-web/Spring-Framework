@@ -1,5 +1,6 @@
 package framework.servlet;
 
+import framework.session.MySession;
 import jakarta.servlet.annotation.MultipartConfig;
 import framework.exception.UrlNotFoundException;
 import framework.route.RouteMapping;
@@ -68,6 +69,8 @@ public class FrontControllerServlet extends HttpServlet {
 
             Object[] arguments = resolveArguments(method, request);
             result = method.invoke(controller, arguments);
+            MySession mySession = checkSession(arguments);
+            saveSession(request, mySession);
 
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
@@ -126,6 +129,38 @@ public class FrontControllerServlet extends HttpServlet {
 
         return arguments;
     }
+
+    private MySession checkSession(Object[] arguments){
+        MySession mySession = new MySession();
+        for(int i = 0; i < arguments.length; i++){
+            if(arguments[i].getClass() == MySession.class){
+                mySession = (MySession) arguments[i];
+            }
+        }
+
+        return mySession;
+    }
+
+    public static void saveSession(HttpServletRequest request, MySession mySession) {
+        if (mySession == null) return;
+
+        HttpSession httpSession = request.getSession(true);
+
+        Map<String, Object> attributesMap = mySession.getAttributes();
+
+        for (Map.Entry<String, Object> entry : attributesMap.entrySet()) {
+            httpSession.setAttribute(entry.getKey(), entry.getValue());
+        }
+
+        java.util.Enumeration<String> httpNames = httpSession.getAttributeNames();
+        while (httpNames.hasMoreElements()) {
+            String name = httpNames.nextElement();
+            if (!attributesMap.containsKey(name)) {
+                httpSession.removeAttribute(name);
+            }
+        }
+    }
+
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
