@@ -1,10 +1,13 @@
 package framework.reflection;
 
 import framework.annotation.APIRest;
+import framework.annotation.Auth;
 import framework.annotation.UrlMapping;
 import framework.exception.UrlNotFoundException;
 import framework.route.RouteMapping;
 import framework.route.UrlMethod;
+import framework.session.MySession;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
@@ -64,6 +67,23 @@ public class Utilitaire {
 
         return result;
     }
+
+    public static void checkAuthentification(RouteMapping route, String authAttributeName, HttpSession session) throws Exception {
+        if (route.isRequiresAuth()) {
+            boolean authenticated = false;
+
+            if(session.getAttribute(authAttributeName) != null){
+                authenticated = true;
+            }
+
+            if (!authenticated) {
+                throw new Exception(
+                        "Erreur : Vous devez vous authentifier pour pouvoir acceder a cette methode"
+                );
+            }
+        }
+    }
+
 
     public static Map<String, Method> getUrlMethods(Class<?> classe) {
         Map<String, Method> routes = new HashMap<>();

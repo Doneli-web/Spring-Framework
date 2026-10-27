@@ -17,6 +17,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ public class FrontControllerServlet extends HttpServlet {
 
     String prefixe;
     String suffixe;
+    String authAttributeName;
     private List<String> controllerNames;
     private Map<UrlMethod, RouteMapping> urlsMethodes;
     private ApplicationContext springContext;
@@ -39,6 +41,7 @@ public class FrontControllerServlet extends HttpServlet {
             this.urlsMethodes = (Map<UrlMethod, RouteMapping>) getServletContext().getAttribute("urlsMethodes");
             this.prefixe = (String) getServletContext().getAttribute("prefixe");
             this.suffixe = (String) getServletContext().getAttribute("suffixe");
+            this.authAttributeName = (String) getServletContext().getAttribute("authAttributeName");
             this.springContext = (ApplicationContext) getServletContext().getAttribute("springContext");
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -68,6 +71,7 @@ public class FrontControllerServlet extends HttpServlet {
             method.setAccessible(true);
 
             Object[] arguments = resolveArguments(method, request);
+            Utilitaire.checkAuthentification(route, this.authAttributeName, request.getSession(true));
             result = method.invoke(controller, arguments);
             MySession mySession = checkSession(arguments);
             saveSession(request, mySession);
@@ -78,6 +82,8 @@ public class FrontControllerServlet extends HttpServlet {
                 throw new ServletException( "Erreur dans la méthode : " + route.getMethod().getName(), cause );
             }
             throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         if (route.getMethod().getReturnType() == void.class) {
             return;
@@ -130,22 +136,21 @@ public class FrontControllerServlet extends HttpServlet {
         return arguments;
     }
 
-    private MySession checkSession(Object[] arguments){
-        MySession mySession = new MySession();
-        for(int i = 0; i < arguments.length; i++){
-            if(arguments[i].getClass() == MySession.class){
-                mySession = (MySession) arguments[i];
+    private MySession checkSession(Object[] arguments) {
+        if (arguments == null) return null;
+
+        for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i] instanceof MySession) {
+                return (MySession) arguments[i];
             }
         }
-
-        return mySession;
+        return null;
     }
 
     public static void saveSession(HttpServletRequest request, MySession mySession) {
         if (mySession == null) return;
 
         HttpSession httpSession = request.getSession(true);
-
         Map<String, Object> attributesMap = mySession.getAttributes();
 
         for (Map.Entry<String, Object> entry : attributesMap.entrySet()) {
@@ -153,11 +158,16 @@ public class FrontControllerServlet extends HttpServlet {
         }
 
         java.util.Enumeration<String> httpNames = httpSession.getAttributeNames();
+        List<String> toRemove = new ArrayList<>();
+
         while (httpNames.hasMoreElements()) {
             String name = httpNames.nextElement();
             if (!attributesMap.containsKey(name)) {
-                httpSession.removeAttribute(name);
+                toRemove.add(name);
             }
+        }
+        for (String name : toRemove) {
+            httpSession.removeAttribute(name);
         }
     }
 

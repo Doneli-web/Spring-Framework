@@ -1,14 +1,18 @@
 package framework.route;
 
+import framework.annotation.Auth;
+
 import java.lang.reflect.Method;
 
 public class RouteMapping {
     private Class<?> Clazz;
     private Method method;
+    private final boolean requiresAuth;
 
     public RouteMapping(Class<?> Clazz, Method method) {
         this.Clazz = Clazz;
         this.method = method;
+        this.requiresAuth = method.isAnnotationPresent(Auth.class);
     }
 
     public Class<?> getClazz() {
@@ -25,5 +29,9 @@ public class RouteMapping {
 
     public void setMethod(Method method) {
         this.method = method;
+    }
+
+    public boolean isRequiresAuth() {
+        return requiresAuth;
     }
 }
