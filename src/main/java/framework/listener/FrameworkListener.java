@@ -29,6 +29,7 @@ public class FrameworkListener implements ServletContextListener {
         String prefixe = context.getInitParameter("prefixe");
         String suffixe = context.getInitParameter("suffixe");
         String springConfigClass = context.getInitParameter("springConfigClass");
+        String authAttributeName = context.getInitParameter("authAttributeName");
 
         try {
 
@@ -40,6 +41,7 @@ public class FrameworkListener implements ServletContextListener {
             context.setAttribute("urlsMethodes", urlsMethodes);
             context.setAttribute("prefixe", prefixe);
             context.setAttribute("suffixe", suffixe);
+            context.setAttribute("authAttributeName", authAttributeName);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
