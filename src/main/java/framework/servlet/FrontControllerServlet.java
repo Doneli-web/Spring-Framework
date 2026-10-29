@@ -30,6 +30,7 @@ public class FrontControllerServlet extends HttpServlet {
     String prefixe;
     String suffixe;
     String authAttributeName;
+    String role;
     private List<String> controllerNames;
     private Map<UrlMethod, RouteMapping> urlsMethodes;
     private ApplicationContext springContext;
@@ -42,6 +43,7 @@ public class FrontControllerServlet extends HttpServlet {
             this.prefixe = (String) getServletContext().getAttribute("prefixe");
             this.suffixe = (String) getServletContext().getAttribute("suffixe");
             this.authAttributeName = (String) getServletContext().getAttribute("authAttributeName");
+            this.role = (String) getServletContext().getAttribute("role");
             this.springContext = (ApplicationContext) getServletContext().getAttribute("springContext");
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -71,7 +73,7 @@ public class FrontControllerServlet extends HttpServlet {
             method.setAccessible(true);
 
             Object[] arguments = resolveArguments(method, request);
-            Utilitaire.checkAuthentification(route, this.authAttributeName, request.getSession(true));
+            Utilitaire.checkAuthentification(route, this.authAttributeName, role, request.getSession(true));
             result = method.invoke(controller, arguments);
             MySession mySession = checkSession(arguments);
             saveSession(request, mySession);

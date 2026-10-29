@@ -68,12 +68,28 @@ public class Utilitaire {
         return result;
     }
 
-    public static void checkAuthentification(RouteMapping route, String authAttributeName, HttpSession session) throws Exception {
+    public static void checkAuthentification(RouteMapping route, String authAttributeName, String role, HttpSession session) throws Exception {
         if (route.isRequiresAuth()) {
             boolean authenticated = false;
+            boolean hasTherole = false;
 
             if(session.getAttribute(authAttributeName) != null){
                 authenticated = true;
+                if(route.isRequireRole()){
+                    if (session.getAttribute(role) != null) {
+                        hasTherole = route.hasTheRole((String) session.getAttribute(role));
+                    } else {
+                        throw new Exception(
+                                "Erreur : Veuillez d'abord definir votre role"
+                        );
+                    }
+
+                    if (!hasTherole) {
+                        throw new Exception(
+                                "Erreur : Votre role qui est de " + (String) session.getAttribute(role) + " n'est pas eligible a executer la methode"
+                        );
+                    }
+                }
             }
 
             if (!authenticated) {
